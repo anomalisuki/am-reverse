@@ -260,6 +260,9 @@
         .input-wrap .actions button:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
 
         .error-text { font-size: 10px; color: var(--red); margin-top: 4px; min-height: 16px; }
+        .error-text.success { color: var(--green); }
+        .error-text.error { color: var(--red); }
+
         .step-status-text { font-size: 10px; color: var(--muted2); margin-top: 8px; min-height: 16px; }
         .step-status-text.success { color: var(--green); }
         .step-status-text.error { color: var(--red); }
@@ -859,7 +862,7 @@
                 const session = $('sessionStatus');
                 const labels = ['', 'Tahap 1: Masukkan email', 'Tahap 2: Verifikasi link', 'Selesai: Premium aktif'];
                 session.querySelector('span').textContent = labels[n] || 'Sesi siap';
-                session.querySelector('iclassName').className = n === 3 ? 'online' : '';
+                session.querySelector('i').className = n === 3 ? 'online' : '';
             };
 
             const say = (id, txt, ok) => {
@@ -889,7 +892,7 @@
                         say('m1', j.message || 'gagal', 0);
                         consoleLog('Gagal kirim link: ' + (j.message || 'gagal'), 'err');
                     }
-                } catch {
+                } catch (err) {
                     say('m1', 'server gak nyambung', 0);
                     consoleLog('Koneksi server gagal.', 'err');
                 }
@@ -922,7 +925,17 @@
                         say('m2', j.message || 'gagal', 0);
                         consoleLog('Verifikasi gagal: ' + (j.message || 'gagal'), 'err');
                     }
-                } catch {
+                } catch (err) {
+                    // Jika server memberikan respons JSON valid meskipun status error, tangani pesannya
+                    try {
+                        const errorData = await err.response?.json?.();
+                        if (errorData && errorData.message) {
+                            say('m2', errorData.message, 0);
+                            consoleLog('Verifikasi gagal: ' + errorData.message, 'err');
+                            return;
+                        }
+                    } catch(e) {}
+                    
                     say('m2', 'server gak nyambung', 0);
                     consoleLog('Koneksi server gagal saat verifikasi.', 'err');
                 }
